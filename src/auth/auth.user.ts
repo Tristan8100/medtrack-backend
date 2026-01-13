@@ -4,7 +4,7 @@ import { SetMetadata } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 
 export const ROLE_KEY = 'role';
-export const Role = (role: string) => SetMetadata('role', role);
+export const Role = (...roles: string[]) => SetMetadata(ROLE_KEY, roles);
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -12,29 +12,28 @@ export class RolesGuard implements CanActivate {
         private userService: UsersService,
         private reflector: Reflector
     ) {}
+
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const req = context.switchToHttp().getRequest();
         const user = req.user; // already set by AuthGuard
 
-        const requiredRole = this.reflector.getAllAndOverride<string>(
-        ROLE_KEY,
-        [context.getHandler(), context.getClass()],
+        const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+            ROLE_KEY,
+            [context.getHandler(), context.getClass()],
         );
-        
-
-        console.log('User from AuthGuard:', user);
 
         if (!user) {
-        throw new UnauthorizedException('User not found');
+            throw new UnauthorizedException('User not found');
         }
 
-        const val = await this.userService.findOne(user.id); //change to sub, idk
+        const userId = user.sub || user.id;
+        const val = await this.userService.findOne(userId); //change to sub, idk
 
         if (!val) {
-        throw new UnauthorizedException('User not foundSS');
+            throw new UnauthorizedException('User not found');
         }
 
-        if(requiredRole && val.role !== requiredRole) {
+        if (requiredRoles && !requiredRoles.includes(val.role)) {
             console.log('Access denied');
             throw new ForbiddenException('Access denied');
         }

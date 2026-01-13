@@ -28,9 +28,9 @@ export class AuthController {
     }
 
     //STAFF LOGIN
-    @Post('admin-login')
+    @Post('staff-login')
     signInStaff(@Body() signInDto:SignInDto) {
-       const val = this.authService.signIn(signInDto.email, signInDto.password, 'admin');
+       const val = this.authService.signIn(signInDto.email, signInDto.password, 'staff');
        return val;
     }
 
@@ -103,6 +103,13 @@ export class AuthController {
     @Role('staff')
     @Get('verify-staff')
     setStaff(@Request() req) {
+        return this.authService.user(req.user);
+    }
+
+    @UseGuards(AuthGuard, RolesGuard) // for roles
+    @Role('staff', 'admin')
+    @Get('verify-all')
+    setAll(@Request() req) {
         return this.authService.user(req.user);
     }
 }
