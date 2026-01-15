@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, Matches } from 'class-validator';
 
 export class CreateAppointmentDto {
   @IsNotEmpty({ message: 'Date is required' })
@@ -15,4 +15,10 @@ export class CreateAppointmentDto {
   @IsOptional()
   @IsString({ message: 'Notes must be a string' })
   notes?: string;
+}
+
+export class StatusDTO {
+  @IsNotEmpty({ message: 'Status is required' })
+  @IsEnum(['pending', 'scheduled', 'completed', 'cancelled', 'no-show', 'declined', 'late'], { message: 'Status must be one of: pending, scheduled, completed, cancelled' })
+  status: 'pending' | 'scheduled' | 'completed' | 'cancelled' | 'no-show' | 'declined' | 'late';
 }

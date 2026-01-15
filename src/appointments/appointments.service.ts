@@ -1,17 +1,20 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { CreateAppointmentDto, StatusDTO } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Appointment, AppointmentDocument } from './entities/appointment.entity';
 import { ObjectId } from 'mongodb';
-import { ResponseType } from 'lib/response-type';
+import { INVALID_TRANSITIONS, ResponseType } from 'lib/type';
+import { UserDocument, User } from 'src/users/entities/user.entity';
+import { In } from 'typeorm';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ){}
 
   async create(createAppointmentDto: CreateAppointmentDto, patientId: string): Promise<ResponseType> {
@@ -46,7 +49,7 @@ export class AppointmentsService {
   //for staffs and admin
   async findAll(page: number, search?: string, startDate?: Date, endDate?: Date, status?: string, userId?: string): Promise<ResponseType> {
     try {
-      const limit = 10;
+      const limit = 10; //same sa frontend limit
       const skip = ((page ? page : 1 ) -1) * limit;
 
       const queryBuilder = {}
@@ -74,7 +77,7 @@ export class AppointmentsService {
       console.log('QueryBuilder:', queryBuilder);
 
 
-      const data = await this.appointmentModel.find(queryBuilder).populate('patientId', 'name email').skip(skip).limit(limit).sort({ createdAt: -1 }).exec();
+      const data = await this.appointmentModel.find(queryBuilder).populate('patientId', 'name email').populate('staffId', 'name email').skip(skip).limit(limit).sort({ date: -1 }).exec();
       
       return {
         status: 200,
@@ -87,15 +90,64 @@ export class AppointmentsService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} appointment`;
+  async setStatus(id: string, status: StatusDTO['status'], userId: string): Promise<ResponseType> {
+    try {
+      // Validate appointment ID
+      if (!ObjectId.isValid(id)) {
+        throw new BadRequestException('Invalid id');
+      }
+
+      // Fetch user
+      const user = await this.userModel.findById(userId).exec();
+      if (!user) {
+        throw new BadRequestException('User not found');
+      }
+
+      // Fetch appointment
+      const appointment = await this.appointmentModel.findById(id).exec();
+      if (!appointment) {
+        throw new BadRequestException('Appointment not found');
+      }
+
+      // ROLE BASED VALIDATION!!
+      if (user.role === 'patient') {
+        // Patients can only set status to 'cancelled'
+        if (status !== 'cancelled') {
+          throw new BadRequestException('Patients can only cancel appointments');
+        }
+      } else if (user.role === 'staff' || user.role === 'admin') {
+        // Staff/Admin cannot set status to 'cancelled'
+        if (status === 'cancelled') {
+          throw new BadRequestException('Staff/Admin cannot cancel appointments');
+        }
+      } else {
+        throw new BadRequestException('Invalid user role');
+      }
+
+      // Prevent invalid status transitions (from current status to new status)
+      if (INVALID_TRANSITIONS[appointment.status].includes(status)) {
+        throw new BadRequestException(
+          `Cannot change status from '${appointment.status}' to '${status}'`
+        );
+      }
+
+      // Update appointment status
+      const updated = await this.appointmentModel.findByIdAndUpdate(
+        id,
+        { status, staffId: user.role === 'staff' || user.role === 'admin' ? user._id : null },
+        { new: true }
+      ).exec();
+
+      return {
+        status: 200,
+        message: 'Status updated successfully',
+        origin: 'AppointmentsService.setStatus',
+        data: updated
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
   }
 
-  update(id: number, updateAppointmentDto: UpdateAppointmentDto) {
-    return `This action updates a #${id} appointment`;
-  }
 
-  remove(id: number) {
-    return `This action removes a #${id} appointment`;
-  }
 }
