@@ -49,7 +49,7 @@ export class AppointmentsService {
   //for staffs and admin
   async findAll(page: number, search?: string, startDate?: Date, endDate?: Date, status?: string, userId?: string): Promise<ResponseType> {
     try {
-      const limit = 10; //same sa frontend limit
+      const limit = 10; //not dynamic
       const skip = ((page ? page : 1 ) -1) * limit;
 
       const queryBuilder = {}
@@ -77,8 +77,16 @@ export class AppointmentsService {
       console.log('QueryBuilder:', queryBuilder);
 
 
-      const data = await this.appointmentModel.find(queryBuilder).populate('patientId', 'name email').populate('staffId', 'name email').skip(skip).limit(limit).sort({ date: -1 }).exec();
+      const appointments = await this.appointmentModel.find(queryBuilder).populate('patientId', 'name email').populate('staffId', 'name email').skip(skip).limit(limit).sort({ date: -1 }).exec();
+      //const count = await this.appointmentModel.countDocuments(queryBuilder).exec();
+      //console.log('Count:', count);
       
+      const data = {
+        limit: limit,
+        data: appointments,
+        nextPage: appointments.length < limit ? null : page + 1,
+        previousPage: page > 1 ? page - 1 : null
+      }
       return {
         status: 200,
         message: 'Appointments fetched successfully',

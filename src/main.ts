@@ -4,7 +4,11 @@ import { ValidationPipe } from '@nestjs/common'; //ADDED
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe()); //ADDED
+  app.useGlobalPipes(new ValidationPipe({
+      whitelist: true,           // Strips properties not in DTO
+      forbidNonWhitelisted: true, // Throws error if extra properties sent (recommended)
+      transform: true,            // Auto-transform payloads to DTO instances
+    })); //ADDED
   app.enableCors({
     origin: process.env.FRONTEND_URL || '*', // your frontend URL
     credentials: true, // if sending cookies or auth headers

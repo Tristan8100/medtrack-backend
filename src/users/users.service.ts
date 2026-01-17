@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -10,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { CreatePatientDTO, CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './entities/user.entity';
+import { ResponseType } from 'lib/type';
 
 @Injectable()
 export class UsersService {
@@ -71,7 +73,10 @@ export class UsersService {
   async findOne(id: string | Types.ObjectId): Promise<UserDocument> {
     const objectId = typeof id === 'string' ? new Types.ObjectId(id) : id;
 
-    const user = await this.userModel.findById(objectId).exec();
+    const user = await this.userModel
+      .findById(objectId)
+      .select('-password')
+      .exec();
 
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -81,26 +86,76 @@ export class UsersService {
   }
 
   async update(
-    id: string | Types.ObjectId,
+    user: any,
     updateUserDto: UpdateUserDto,
   ): Promise<UserDocument> {
-    const user = await this.findOne(id);
-
-    if (updateUserDto.email) {
-      await this.checkEmailExists(updateUserDto.email, user._id.toString());
-    }
+    const userData = await this.findOne(user.id);
 
     if (updateUserDto.password) {
       updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
     }
 
-    Object.assign(user, updateUserDto);
+    const updateUser = await this.userModel
+      .findByIdAndUpdate(user.id, updateUserDto, { new: true })
+      .exec();
 
-    return user.save();
+    if (!updateUser) {
+      throw new NotFoundException(`User with ID ${user.id} not found`);
+    }
+
+    return updateUser;
   }
 
   async remove(id: string | Types.ObjectId): Promise<void> {
     const user = await this.findOne(id);
     await user.deleteOne();
   }
+
+  async getAllUsers(page: number, search?: string, role?: string): Promise<ResponseType> {
+    try {
+      const limit = 10;
+      const currentPage = page && page > 0 ? page : 1;
+      const skip = (currentPage - 1) * limit;
+
+      const queryBuilder: any = {};
+
+      // Filter by role
+      if (role) {
+        //console.log(role);
+        queryBuilder.role = role;
+      }
+
+      // Search by name or email
+      if (search) {
+        queryBuilder.$or = [
+          { name: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } },
+        ];
+      }
+
+      const users = await this.userModel
+        .find(queryBuilder)
+        .select('-password')// Remove!!
+        .skip(skip)
+        .limit(limit)
+        .sort({ created_at: -1 })
+        .exec();
+
+      const data = {
+        data: users,
+        nextPage: users.length < limit ? null : page + 1,
+        prevPage: page > 1 ? page - 1 : null,
+      };
+
+      return {
+        status: 200,
+        message: 'Users fetched successfully',
+        origin: 'UsersService.getAllUsers',
+        data: data,
+      };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
 }

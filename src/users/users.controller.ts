@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { RolesGuard } from 'src/auth/auth.user';
 
 @Controller('users')
 export class UsersController {
@@ -12,19 +14,40 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @Get()
+  @Get('')
   findAll() {
     return this.usersService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(id);
+  //UPDATED
+  @Get('all')
+  async getAllUsers(@Query('page') page?: string, @Query('search') search?: string, @Query('role') role?: string) {
+      return await this.usersService.getAllUsers(page ? Number(page) : 1, search, role,);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(id, updateUserDto);
+  // @Get(':id')
+  // findOne(@Param('id') id: string) {
+  //   return this.usersService.findOne(id);
+  // } //will error at the bottom
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Get('my-profile')
+  myProfile(@Request() req) {
+    console.log("userrrrr", req.user);
+    return this.usersService.findOne(req.user.id);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Get('me')
+  me(@Request() req) {
+    console.log("userrrrr", req.user);
+    return { user: req.user };
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Patch()
+  update(@Request() req, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(req.user, updateUserDto);
   }
 
   @Delete(':id')
