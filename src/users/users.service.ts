@@ -12,6 +12,7 @@ import { CreatePatientDTO, CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './entities/user.entity';
 import { ResponseType } from 'lib/type';
+import { UpdateUserPasswordDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -91,9 +92,9 @@ export class UsersService {
   ): Promise<UserDocument> {
     const userData = await this.findOne(user.id);
 
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-    }
+    // if (updateUserDto.password) {
+    //   updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    // }
 
     const updateUser = await this.userModel
       .findByIdAndUpdate(user.id, updateUserDto, { new: true })
@@ -104,6 +105,42 @@ export class UsersService {
     }
 
     return updateUser;
+  }
+
+  async updatePassword(id: string, data : UpdateUserPasswordDto): Promise<any> {
+    const { currentPassword, password, confirmPassword } = data;
+
+    try{
+      if (password !== confirmPassword) {
+        throw new BadRequestException('Passwords do not match');
+      }
+
+      //find user
+      const user = await this.userModel.findById(id).exec();
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      //check password
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        throw new BadRequestException('Current password is incorrect');
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const updatedUser = await this.userModel.findByIdAndUpdate(id, { password: hashedPassword }, { new: true }).exec();
+      
+      if (!updatedUser) {
+        throw new NotFoundException('User not found');
+      }
+
+      return {message: 'Password updated successfully'};
+
+      } catch (error) {
+        console.log(error);
+        throw new BadRequestException(error.message);
+      }
   }
 
   async remove(id: string | Types.ObjectId): Promise<void> {
