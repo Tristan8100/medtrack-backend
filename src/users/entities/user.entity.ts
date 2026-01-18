@@ -35,3 +35,31 @@ export class User {
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+// ELOQUENT - LARAVEL
+// Virtual: User has many Appointments (as patient)
+UserSchema.virtual('appointments', {
+  ref: 'Appointment',
+  localField: '_id',
+  foreignField: 'patientId',
+});
+
+// Virtual: User has many Appointments (as staff)
+UserSchema.virtual('assignedAppointments', {
+  ref: 'Appointment',
+  localField: '_id',
+  foreignField: 'staffId',
+});
+
+// Virtual: User has many Medical Records (as patient)
+UserSchema.virtual('medicalRecords', {
+  ref: 'MedicalRecord',
+  localField: '_id',
+  foreignField: 'patientId',
+});
+
+// Virtual: User has many Medical Records (as creator/staff)
+UserSchema.virtual('createdMedicalRecords', {
+  ref: 'MedicalRecord',
+  localField: '_id',
+  foreignField: 'staffCreatedId',
+});
