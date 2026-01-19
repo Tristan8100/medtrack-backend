@@ -8,6 +8,7 @@ import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { MedicalRecordsModule } from './medical-records/medical-records.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { MedicalRecordsModule } from './medical-records/medical-records.module';
     UsersModule,
     AuthModule,
     AppointmentsModule,
-    MedicalRecordsModule
+    MedicalRecordsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

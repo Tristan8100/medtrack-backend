@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { ObjectId } from 'mongodb';
 import { INVALID_TRANSITIONS, ResponseType } from 'lib/type';
 import { UserDocument, User } from 'src/users/entities/user.entity';
-import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
+import { CreateMedicalRecordDto, UpdateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { MedicalRecord, MedicalRecordDocument } from './entities/medical-record.entity';
 import { Appointment, AppointmentDocument } from 'src/appointments/entities/appointment.entity';
 
@@ -27,8 +27,8 @@ export class MedicalRecordsService {
         throw new BadRequestException('Invalid id');
       }
 
-      if (appointmentId !== undefined) {
-        if (!ObjectId.isValid(appointmentId)) {
+      if (appointmentId !== undefined) { // NOTE: "" is falsy so use !== undefined since "" is not undefined, any invalid id will execute to if, and if undefined skip
+        if (!ObjectId.isValid(appointmentId)) { // NOTE: but just use @IsMongoId on dto
           throw new BadRequestException('Invalid id');
         }
       }
@@ -39,14 +39,13 @@ export class MedicalRecordsService {
         throw new BadRequestException('Patient not found');
       }
 
-      //Check if appointmentId exists AND is not empty string
-      if (appointmentId && appointmentId.trim() !== '') {
+      if(appointmentId){ //can be null ah
         const appointment = await this.appointmentModel.findById(appointmentId).exec();
         if (!appointment || appointment.patientId.toString() !== patient._id.toString()) {
           throw new BadRequestException('Appointment not found or does not belong to this patient');
         }
       }
-
+      
       const roles = ['staff', 'admin'];
 
       const staff = await this.userModel.findById(staffCreatedId).exec();
@@ -130,6 +129,7 @@ export class MedicalRecordsService {
         .populate('patientId', 'name email phoneNumber')
         .populate('staffCreatedId', 'name email')
         .populate('appointmentId')
+        .populate('staffCreatedId', 'name email')
         .skip(skip)
         .limit(limit)
         .sort({ visitDate: -1 })
@@ -152,5 +152,82 @@ export class MedicalRecordsService {
       throw new BadRequestException(error.message);
     }
   }
+
+  async update(
+    id: string,
+    updateDto: UpdateMedicalRecordDto,
+    staffId: string
+  ): Promise<ResponseType> {
+    if (!ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid medical record id');
+    }
+
+    const staffRole = await this.userModel.findById(staffId).exec();
+    if (!staffRole) {
+      throw new BadRequestException('Invalid staff id');
+    }
+
+    const record = await this.medicalRecordModel.findById(id).exec();
+    if (!record) {
+      throw new BadRequestException('Medical record not found');
+    }
+
+    //check if staff is the creator or admin
+    if (record.staffCreatedId.toString() !== staffId && staffRole.role !== 'admin') {
+      throw new BadRequestException('You are not the creator of this medical record');
+    }
+
+    if (updateDto.visitDate) {
+      const visitDateObj = new Date(updateDto.visitDate);
+      if (visitDateObj > new Date()) {
+        throw new BadRequestException('Visit date cannot be in the future');
+      }
+      updateDto.visitDate = visitDateObj as any;
+    }
+
+    const updated = await this.medicalRecordModel.findByIdAndUpdate(
+      id,
+      { $set: updateDto },
+      { new: true },
+    );
+
+    return {
+      status: 200,
+      message: 'Medical record updated successfully',
+      origin: 'MedicalRecordsService.update',
+      data: updated,
+    };
+  }
+
+  async delete(id: string, staffId: string): Promise<ResponseType> {
+    if (!ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid medical record id');
+    }
+
+    const staffRole = await this.userModel.findById(staffId).exec();
+    if (!staffRole) {
+      throw new BadRequestException('Invalid staff id');
+    }
+
+    const record = await this.medicalRecordModel.findById(id).exec();
+    if (!record) {
+      throw new BadRequestException('Medical record not found');
+    }
+
+    //check if staff is the creator or admin
+    if (record.staffCreatedId.toString() !== staffId && staffRole.role !== 'admin') {
+      throw new BadRequestException('You are not the creator of this medical record');
+    }
+
+    const deleted = await this.medicalRecordModel.findByIdAndDelete(id);
+
+    return {
+      status: 200,
+      message: 'Medical record deleted successfully',
+      origin: 'MedicalRecordsService.delete',
+      data: deleted,
+    };
+  }
+
 
 }

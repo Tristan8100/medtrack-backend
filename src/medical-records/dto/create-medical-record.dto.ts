@@ -5,7 +5,9 @@ import {
   IsNumber, 
   ValidateNested,
   Matches,
-  IsMongoId
+  IsMongoId,
+  IsDate,
+  IsDateString
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -79,6 +81,36 @@ export class CreateMedicalRecordDto {
   @IsNotEmpty({ message: 'Diagnosis is required' })
   @IsString({ message: 'Diagnosis must be a string' })
   diagnosis: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateVitalSignsDto)
+  vitalSigns?: CreateVitalSignsDto;
+}
+
+export class UpdateMedicalRecordDto {
+  // patientId
+  // appointmentId
+  // staffCreatedId
+
+  @IsOptional()
+  @IsDateString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'Visit date must be in YYYY-MM-DD format',
+  })
+  visitDate?: Date;
+
+  @IsOptional()
+  @IsString({ message: 'Chief complaint must be a string' })
+  chiefComplaint?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Notes must be a string' })
+  notes?: string;
+
+  @IsOptional()
+  @IsString({ message: 'Diagnosis must be a string' })
+  diagnosis?: string;
 
   @IsOptional()
   @ValidateNested()

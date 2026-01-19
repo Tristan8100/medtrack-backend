@@ -21,7 +21,7 @@ export type StatusType =
 // Forbidden transitions for each current status
 export const INVALID_TRANSITIONS: Record<StatusType, StatusType[]> = {
   pending: ['completed', 'no-show', 'late'], //cannot jump to these
-  scheduled: ['pending', 'completed', 'no-show', 'cancelled', 'late'], //cannot go back to pending, cannot jump to completed/no-show/cancelled/late
+  scheduled: ['pending', 'no-show', 'cancelled'], //cannot go back to pending, cannot jump to completed/no-show
   completed: ['pending', 'scheduled', 'cancelled', 'no-show', 'declined', 'late'], //completed is final
   cancelled: ['pending', 'scheduled', 'completed', 'no-show', 'declined', 'late'], //cancelled is final
   'no-show': ['pending', 'scheduled', 'completed', 'cancelled', 'declined', 'late'], //no-show is final

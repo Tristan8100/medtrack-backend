@@ -1,10 +1,14 @@
 
-import { IsEmail, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class UpdateUserDto {
-  @IsNotEmpty({ message: 'name is required' })
+  @IsOptional()
   @MinLength(4, { message: 'Name must be at least 4 characters long' })
-  name: string;
+  name?: string;
+
+  @IsString()
+  @IsOptional()
+  phoneNumber?: string;
 
   // @IsOptional()
   // @MinLength(6)

@@ -13,6 +13,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User, UserDocument } from './entities/user.entity';
 import { ResponseType } from 'lib/type';
 import { UpdateUserPasswordDto } from './dto/update-user.dto';
+import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class UsersService {
@@ -190,6 +191,37 @@ export class UsersService {
         origin: 'UsersService.getAllUsers',
         data: data,
       };
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
+  async updateStaffProfile(id: string, userId: string, data: UpdateUserDto): Promise<ResponseType> {
+    try {
+      if(!ObjectId.isValid(id) || !ObjectId.isValid(userId)){
+        throw new BadRequestException('Invalid user id');
+      }
+      const user = await this.userModel.findById(id).exec();
+      const admin = await this.userModel.findById(userId).exec();
+
+      if (!admin || admin.role !== 'admin') {
+        throw new BadRequestException('You are not an admin');
+      }
+      if (!user || user.role !== 'staff') {
+        throw new NotFoundException(`User with ID ${id} not found`);
+      }
+
+      const updatedUser = await this.userModel
+        .findByIdAndUpdate(id, data, { new: true })
+        .exec();
+
+      return {
+        status: 200,
+        message: 'User status updated successfully',
+        origin: 'UsersService.updateStaffStatus',
+        data: updatedUser,
+      };
+
     } catch (error) {
       throw new BadRequestException(error.message);
     }

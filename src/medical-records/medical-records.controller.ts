@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query, ParseIntPipe, Put } from '@nestjs/common';
 import { MedicalRecordsService } from './medical-records.service';
 
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Role, RolesGuard } from 'src/auth/auth.user';
-import { CreateMedicalRecordDto } from './dto/create-medical-record.dto';
+import { CreateMedicalRecordDto, UpdateMedicalRecordDto } from './dto/create-medical-record.dto';
+import { ParseObjectIdPipe } from '@nestjs/mongoose';
 
 @Controller('medical-records')
 export class MedicalRecordsController {
@@ -52,7 +53,7 @@ export class MedicalRecordsController {
   // For patients - view their own medical records
   @UseGuards(AuthGuard, RolesGuard)
   @Role('patient')
-  @Get('/my-records')
+  @Get('/my-records') // for future use, patients should not be able to view any medical records
   async findAllMyRecords(
     @Request() req,
     @Query('page') page: ParseIntPipe,
@@ -88,9 +89,27 @@ export class MedicalRecordsController {
       search,
       startDate,
       endDate,
-      diagnosis,
-      id, // Filter by specific patient ID
+      id
     );
   }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Role('admin', 'staff')
+  @Put(':id')
+  async update(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() updateMedicalRecordDto: UpdateMedicalRecordDto,
+    @Request() req
+  ) {
+    return this.medicalRecordsService.update(id, updateMedicalRecordDto, req.user.id);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Role('admin', 'staff')
+  @Delete(':id')
+  async delete(@Param('id', ParseObjectIdPipe) id: string, @Request() req) {
+    return this.medicalRecordsService.delete(id, req.user.id);
+  }
+
 
 }
