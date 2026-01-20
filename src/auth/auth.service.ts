@@ -46,9 +46,9 @@ export class AuthService {
 
     try {
       await transporter.sendMail({
-        from: `"ECHOMIND" <${process.env.MAIL_FROM_ADDRESS}>`,
+        from: `"MEDTRACK" <${process.env.MAIL_FROM_ADDRESS}>`,
         to: email,
-        subject: 'Your Echomind Verification Code',
+        subject: 'Your MEDTRACK Verification Code',
         html: `<div>Your verification code is: <strong>${code}</strong></div>`,
       });
     } catch (err) {

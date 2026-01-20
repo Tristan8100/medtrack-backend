@@ -24,9 +24,9 @@ export class CreateUserDto {
   @IsPhoneNumber('PH', { message: 'Please provide a valid phone number' }) 
   phoneNumber: string;
 
-  @IsDateString()
-  @IsOptional()
-  email_verified_at?: Date;
+  // @IsDateString()
+  // @IsOptional()
+  // email_verified_at?: Date; //wrongggg
 }
 
 export class CreatePatientDTO extends OmitType(

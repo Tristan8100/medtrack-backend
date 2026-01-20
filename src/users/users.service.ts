@@ -227,4 +227,33 @@ export class UsersService {
     }
   }
 
+  async deleteStaff(id: string, userId: string): Promise<ResponseType> {
+    try {
+      if(!ObjectId.isValid(id) || !ObjectId.isValid(userId)){
+        throw new BadRequestException('Invalid user id');
+      }
+      const user = await this.userModel.findById(id).exec();
+      const admin = await this.userModel.findById(userId).exec();
+
+      if (!admin || admin.role !== 'admin') {
+        throw new BadRequestException('You are not an admin');
+      }
+      if (!user || user.role !== 'staff') {
+        throw new NotFoundException(`User with ID ${id} not found`);
+      }
+
+      const deleted = await this.userModel.findByIdAndDelete(id);
+
+      return {
+        status: 200,
+        message: 'User deleted successfully',
+        origin: 'UsersService.deleteStaff',
+        data: deleted,
+      };
+
+    } catch (error) {
+      throw new BadRequestException(error.message);
+    }
+  }
+
 }

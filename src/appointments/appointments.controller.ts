@@ -87,4 +87,11 @@ export class AppointmentsController {
     return this.appointmentsService.setStatus(id, statusDto.status, req.user.id);
   }
 
+  @UseGuards(AuthGuard, RolesGuard) // for roles
+  @Role('patient')
+  @Get('my-dashboard')
+  remove(@Request() req) {
+    return this.appointmentsService.getDashboard(req.user.id);
+  }
+
 }

@@ -6,7 +6,7 @@ export class UpdateUserDto {
   @MinLength(4, { message: 'Name must be at least 4 characters long' })
   name?: string;
 
-  @IsString()
+  @IsString({ message: 'Phone number must be a string' })
   @IsOptional()
   phoneNumber?: string;
 

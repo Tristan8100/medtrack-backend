@@ -17,7 +17,7 @@ export class AnalyticsService {
         return 'hello';
     }
 
-    // Daily/Weekly/Monthly appointment counts
+    // Get appointment counts grouped by day/week/month
     async getAppointmentCounts(period: 'day' | 'week' | 'month' = 'week', limit: number = 30) {
         const groupFormat = {
             day: { $dateToString: { format: '%Y-%m-%d', date: '$date' } },
@@ -32,8 +32,9 @@ export class AnalyticsService {
                     count: { $sum: 1 }
                 }
             },
-            { $sort: { _id: -1 } },
-            { $limit: limit }
+            { $sort: { _id: -1 } },//RECENT DAYS, using 1 will get the first appointment
+            { $limit: limit },// Limit
+            { $sort: { _id: 1 } }// oldest to newest
         ]);
 
         return results.map(r => ({
@@ -42,7 +43,7 @@ export class AnalyticsService {
         }));
     }
 
-    // Appointments by status
+    // Count appointments by their status
     async getAppointmentsByStatus() {
         const results = await this.appointmentModel.aggregate([
             {
@@ -66,7 +67,7 @@ export class AnalyticsService {
         };
     }
 
-    // No-show rate percentage
+    // Calculate no-show rate, optionally filter by date range
     async getNoShowRate(startDate?: Date, endDate?: Date) {
         const match: any = {};
         
@@ -103,7 +104,8 @@ export class AnalyticsService {
         };
     }
 
-    // Average appointments per day/week
+    // Get average appointments per day or week
+    // Note:only counts periods that have at least 1 appointment
     async getAverageAppointments(period: 'day' | 'week' = 'day', lookbackDays: number = 30) {
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - lookbackDays);
@@ -137,7 +139,7 @@ export class AnalyticsService {
         };
     }
 
-    // Diagnosis distribution (for pie charts)
+    // Top {N} diagnoses with their counts
     async getDiagnosisDistribution(limit: number = 10) {
         const results = await this.medicalRecordModel.aggregate([
             {
@@ -168,7 +170,7 @@ export class AnalyticsService {
         };
     }
 
-    //Combined dashboard summary - 1 api call
+    // ONE API CALL
     async getDashboardSummary() {
         const [
             statusBreakdown,

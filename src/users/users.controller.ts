@@ -74,4 +74,11 @@ export class UsersController {
   updateStaffProfile(@Param('id') id: string, @Request() req, @Body() data: UpdateUserDto) {
     return this.usersService.updateStaffProfile(id, req.user.id, data);
   }
+
+  @UseGuards(AuthGuard, RolesGuard)
+  @Role('admin')
+  @Delete('staff/:id')
+  deleteStaff(@Param('id') id: string, @Request() req) {
+    return this.usersService.deleteStaff(id, req.user.id);
+  }
 }

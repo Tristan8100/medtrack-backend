@@ -139,6 +139,16 @@ export class AppointmentsService {
         );
       }
 
+      if (
+        status === 'no-show' &&
+        appointment.date.toDateString() !== new Date().toDateString()
+      ) {
+        throw new BadRequestException(
+          'You can only set status to "no-show" for appointments on the same day',
+        );
+      }
+
+
       // Update appointment status
       const updated = await this.appointmentModel.findByIdAndUpdate(
         id,
@@ -155,6 +165,61 @@ export class AppointmentsService {
     } catch (error) {
       throw new BadRequestException(error.message);
     }
+  }
+
+  async getDashboard(patientId: string) {
+    if (!ObjectId.isValid(patientId)) {
+      throw new BadRequestException('Invalid patient ID');
+    }
+
+    const now = new Date();
+
+    // Upcoming appointment
+    const upcoming = await this.appointmentModel
+      .findOne({
+        patientId,
+        date: { $gte: now },
+        status: { $in: ['pending', 'scheduled'] },
+      })
+      .populate('staffId', 'name email')
+      .sort({ date: 1 })
+      .lean();
+
+    // Stats
+    const statsAgg = await this.appointmentModel.aggregate([
+      { $match: { patientId: this.appointmentModel.base.Types.ObjectId.createFromHexString(patientId) } }, // Aggragate risky
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const stats = {
+      pending: 0,
+      scheduled: 0,
+      completed: 0,
+      cancelled: 0,
+      declined: 0,
+      'no-show': 0,
+      late: 0,
+    };
+    statsAgg.forEach(s => (stats[s._id] = s.count));
+
+    // Recent timeline (last 5)
+    const recent = await this.appointmentModel
+      .find({ patientId })
+      .populate('staffId', 'name')
+      .sort({ date: -1 })
+      .limit(5)
+      .lean();
+
+    return {
+      upcoming,
+      stats,
+      recent,
+    };
   }
 
 
