@@ -42,7 +42,7 @@ export class AppointmentsController {
   @Get('/my-appointments')
   async findAllMyAppointments(
     @Request() req,
-    @Query('page') page: ParseIntPipe,
+    @Query('page', ParseIntPipe) page: number,
     @Query('search') search?: string,
     @Query('startDate') startDate?: Date,
     @Query('endDate') endDate?: Date,

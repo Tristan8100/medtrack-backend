@@ -3,7 +3,7 @@ import { CreateAppointmentDto, StatusDTO } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Appointment, AppointmentDocument } from './entities/appointment.entity';
 import { ObjectId } from 'mongodb';
 import { INVALID_TRANSITIONS, ResponseType } from 'lib/type';
@@ -173,6 +173,7 @@ export class AppointmentsService {
     }
 
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Set time to 00:00:00 so it only counts the day
 
     // Upcoming appointment
     const upcoming = await this.appointmentModel
@@ -187,7 +188,7 @@ export class AppointmentsService {
 
     // Stats
     const statsAgg = await this.appointmentModel.aggregate([
-      { $match: { patientId: this.appointmentModel.base.Types.ObjectId.createFromHexString(patientId) } }, // Aggragate risky
+      { $match: { patientId: patientId } }, // Aggragate risky
       {
         $group: {
           _id: '$status',
