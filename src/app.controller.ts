@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Res } from '@nestjs/common';
 import { AppService } from './app.service';
+import type { Response } from 'express';
 
 @Controller()
 export class AppController {
@@ -8,5 +9,10 @@ export class AppController {
   @Get()
   getHello(): string {
     return this.appService.getHello();
+  }
+
+  @Get('redirect')
+  redirectToFrontend(@Res() res: Response) {
+    return res.redirect(process.env.FRONTEND_URL || 'http://localhost:3000');
   }
 }
