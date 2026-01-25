@@ -9,6 +9,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { MedicalRecordsModule } from './medical-records/medical-records.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -22,6 +24,14 @@ import { AnalyticsModule } from './analytics/analytics.module';
       }),
       inject: [ConfigService],
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60000,
+          limit: 150,
+        },
+      ],
+    }),
     UsersModule,
     AuthModule,
     AppointmentsModule,
@@ -29,6 +39,12 @@ import { AnalyticsModule } from './analytics/analytics.module';
     AnalyticsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard
+    }
+  ],
 })
 export class AppModule {}
