@@ -2,6 +2,7 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Role, RolesGuard } from 'src/auth/auth.user';
+import { CustomThrottlerGuard } from 'lib/customThrottle';
 
 @Controller('analytics')
 export class AnalyticsController {
@@ -12,7 +13,7 @@ export class AnalyticsController {
   //   return this.analyticsService.hello();
   // }
 
-  @UseGuards(AuthGuard, RolesGuard) // for roles
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
   @Role('staff', 'admin')
   @Get()
   getSummary() {

@@ -9,7 +9,10 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     //const ip = req.ip ?? "NULL"; //PROBLEMATIC IP IN RENDER
     const userId = req.user?.id ?? "NULL";
     const userAgent = req.headers['user-agent'] ?? "NULL";
-    console.log(`${userId}-${userAgent}`);
+    const env = process.env.NODE_ENV || "development";
+    if (env === "development") {
+      console.log(`${userId}-${userAgent}`);
+    }
 
     return `${userId}-${userAgent}`;
   }

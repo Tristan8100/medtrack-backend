@@ -5,6 +5,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { Role, RolesGuard } from 'src/auth/auth.user';
 import { CreateMedicalRecordDto, UpdateMedicalRecordDto } from './dto/create-medical-record.dto';
 import { ParseObjectIdPipe } from '@nestjs/mongoose';
+import { CustomThrottlerGuard } from 'lib/customThrottle';
 
 @Controller('medical-records')
 export class MedicalRecordsController {
@@ -18,7 +19,7 @@ export class MedicalRecordsController {
   // }
 
   
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard)
   @Role('staff', 'admin')
   @Post()
   async create(
@@ -32,7 +33,7 @@ export class MedicalRecordsController {
   }
 
   // For staff and admin - view all medical records with filters
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard)
   @Role('admin', 'staff')
   @Get()
   async findAll(
@@ -51,7 +52,7 @@ export class MedicalRecordsController {
   }
 
   // For patients - view their own medical records
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard)
   @Role('patient')
   @Get('/my-records') // for future use, patients should not be able to view any medical records
   async findAllMyRecords(
@@ -73,7 +74,7 @@ export class MedicalRecordsController {
   }
 
   // For staff and admin - view specific patient's medical records
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard)
   @Role('admin', 'staff')
   @Get('/user-records/:id')
   async findAllOneUserRecords(
@@ -93,7 +94,7 @@ export class MedicalRecordsController {
     );
   }
 
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard)
   @Role('admin', 'staff')
   @Put(':id')
   async update(
@@ -104,7 +105,7 @@ export class MedicalRecordsController {
     return this.medicalRecordsService.update(id, updateMedicalRecordDto, req.user.id);
   }
 
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard)
   @Role('admin', 'staff')
   @Delete(':id')
   async delete(@Param('id', ParseObjectIdPipe) id: string, @Request() req) {

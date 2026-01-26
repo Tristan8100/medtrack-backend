@@ -8,6 +8,7 @@ import { ResetPasswordDto, SendOtpDto, VerifyEmailDto } from './dto/send-otp-dto
 import { Send } from 'express';
 import { Role, RolesGuard } from './auth.user';
 import { CreatePatientDTO, CreateUserDto } from 'src/users/dto/create-user.dto';
+import { CustomThrottlerGuard } from 'lib/customThrottle';
 
 @Controller('api')
 export class AuthController {
@@ -34,7 +35,7 @@ export class AuthController {
        return val;
     }
 
-    @UseGuards(AuthGuard)
+    @UseGuards(AuthGuard, CustomThrottlerGuard)
     @Get('protected')
     getProtectedResource(@Request() req) {
         return { message: 'This is a protected resource', user: req.user };
@@ -85,28 +86,28 @@ export class AuthController {
     }
 
     //NEXT JS VERIFICATION ROUTE
-    @UseGuards(AuthGuard, RolesGuard) // for roles
+    @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
     @Role('patient')
     @Get('verify-user')
     setUser(@Request() req) {
         return this.authService.user(req.user);
     }
 
-    @UseGuards(AuthGuard, RolesGuard) // for roles
+    @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
     @Role('admin')
     @Get('verify-admin')
     setAdmin(@Request() req) {
         return this.authService.user(req.user);
     }
 
-    @UseGuards(AuthGuard, RolesGuard) // for roles
+    @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
     @Role('staff')
     @Get('verify-staff')
     setStaff(@Request() req) {
         return this.authService.user(req.user);
     }
 
-    @UseGuards(AuthGuard, RolesGuard) // for roles
+    @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
     @Role('staff', 'admin')
     @Get('verify-all')
     setAll(@Request() req) {
