@@ -42,10 +42,6 @@ import { CustomThrottlerGuard } from 'lib/customThrottle';
   controllers: [AppController],
   providers: [
     AppService,
-    {
-      provide: APP_GUARD,
-      useClass: CustomThrottlerGuard //ThrottlerGuard
-    }
   ],
 })
 export class AppModule {}

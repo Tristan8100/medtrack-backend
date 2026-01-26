@@ -4,19 +4,20 @@ import { CreateAppointmentDto, StatusDTO } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Role, RolesGuard } from 'src/auth/auth.user';
+import { CustomThrottlerGuard } from 'lib/customThrottle';
 
 @Controller('appointments')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
-  @UseGuards(AuthGuard, RolesGuard) // for roles
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
   @Role('patient')
   @Post()
   create(@Body() createAppointmentDto: CreateAppointmentDto, @Request() req) {
     return this.appointmentsService.create(createAppointmentDto, req.user.id);
   }
 
-  @UseGuards(AuthGuard, RolesGuard) // for roles
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
   @Role('admin', 'staff')
   @Get()
   async findAll(
@@ -37,7 +38,7 @@ export class AppointmentsController {
     );
   }
 
-  @UseGuards(AuthGuard, RolesGuard) // for roles
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
   @Role('patient')
   @Get('/my-appointments')
   async findAllMyAppointments(
@@ -58,7 +59,7 @@ export class AppointmentsController {
     );
   }
 
-  @UseGuards(AuthGuard, RolesGuard) // for roles //NOT YET TESTED
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles //NOT YET TESTED
   @Role('admin', 'staff')
   @Get('/user-appointments/:id') // for staffs and admin
   async findAllOneUserAppointments(
@@ -80,14 +81,14 @@ export class AppointmentsController {
   }
 
   //SET STATUS
-  @UseGuards(AuthGuard, RolesGuard) // for roles
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
   //@Role('admin', 'staff')
   @Patch(':id')
   setStatus(@Param('id') id: string, @Body() statusDto: StatusDTO, @Request() req) {
     return this.appointmentsService.setStatus(id, statusDto.status, req.user.id);
   }
 
-  @UseGuards(AuthGuard, RolesGuard) // for roles
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard) // for roles
   @Role('patient')
   @Get('my-dashboard')
   remove(@Request() req) {
