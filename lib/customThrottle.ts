@@ -6,11 +6,12 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
   // Override the default tracking logic
   protected async getTracker(req: Record<string, any>): Promise<string> {
 
-    const ip = req.ip ?? "NULL";
+    //const ip = req.ip ?? "NULL"; //PROBLEMATIC IP IN RENDER
+    const userId = req.user?.id ?? "NULL";
     const userAgent = req.headers['user-agent'] ?? "NULL";
-    console.log(`${ip}-${userAgent}`);
+    console.log(`${userId}-${userAgent}`);
 
-    return `${ip}-${userAgent}`;
+    return `${userId}-${userAgent}`;
   }
 
 
