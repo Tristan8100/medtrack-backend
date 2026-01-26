@@ -11,6 +11,7 @@ import { MedicalRecordsModule } from './medical-records/medical-records.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { CustomThrottlerGuard } from 'lib/customThrottle';
 
 @Module({
   imports: [
@@ -43,7 +44,7 @@ import { APP_GUARD } from '@nestjs/core';
     AppService,
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard
+      useClass: CustomThrottlerGuard //ThrottlerGuard
     }
   ],
 })
