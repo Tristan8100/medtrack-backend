@@ -33,4 +33,8 @@ export class ResetPasswordDto{
     @IsString()
     @Length(8, 32)
     password: string;
+
+    @IsString()
+    @Length(8, 32)
+    password_confirmation: string;
 }

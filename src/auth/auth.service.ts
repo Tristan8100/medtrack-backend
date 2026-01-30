@@ -139,9 +139,9 @@ export class AuthService {
     }
 
     await transporter.sendMail({
-      from: `"ECHOMIND" <${process.env.MAIL_FROM_ADDRESS}>`,
+      from: `"MEDTRACK" <${process.env.MAIL_FROM_ADDRESS}>`,
       to: email,
-      subject: 'Your Echomind Password Reset Code',
+      subject: 'Your MEDTRACK Password Reset Code',
       html: `<div>Your password reset code is: <strong>${code}</strong></div>`,
     });
 
