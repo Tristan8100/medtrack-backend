@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request, Put } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto, UpdateUserPasswordDto } from './dto/update-user.dto';
+import { UpdateUserDto, UpdateUserPasswordDto, verifyPhoneDto } from './dto/update-user.dto';
 import { AuthGuard } from 'src/auth/auth.guard';
 import { Role, RolesGuard } from 'src/auth/auth.user';
 import { CustomThrottlerGuard } from 'lib/customThrottle';
@@ -81,5 +81,19 @@ export class UsersController {
   @Delete('staff/:id')
   deleteStaff(@Param('id') id: string, @Request() req) {
     return this.usersService.deleteStaff(id, req.user.id);
+  }
+
+  //phone verification
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard)
+  @Post('phone-verification')
+  sendPhoneVerification(@Request() req) {
+    return this.usersService.sendPhoneVerification(req.user.id);
+  }
+
+  @UseGuards(AuthGuard, RolesGuard, CustomThrottlerGuard)
+  @Post('phone-verification/verify')
+  verifyPhone(@Body() data: verifyPhoneDto, @Request() req) {
+    const { phoneNumber, code } = data;
+    return this.usersService.verifyPhone(phoneNumber, code, req.user.id);
   }
 }

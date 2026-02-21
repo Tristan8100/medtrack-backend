@@ -10,6 +10,9 @@ export class UpdateUserDto {
   @IsOptional()
   phoneNumber?: string;
 
+  @IsOptional()
+  phone_verified_at?: Date | null; //for easier access, value cannot be tampered by users
+
   // @IsOptional()
   // @MinLength(6)
   // password?: string;
@@ -27,5 +30,15 @@ export class UpdateUserPasswordDto {
   @IsNotEmpty({ message: 'Confirm password is required' })
   @MinLength(6, { message: 'Confirm password must be at least 6 characters long' })
   confirmPassword: string;
+}
+
+export class verifyPhoneDto {
+  @IsString({ message: 'Phone number must be a string' })
+  @IsNotEmpty({ message: 'Phone number is required' })
+  phoneNumber: string;
+
+  @IsString({ message: 'Code must be a string' })
+  @IsNotEmpty({ message: 'Code is required' })
+  code: string;
 }
 

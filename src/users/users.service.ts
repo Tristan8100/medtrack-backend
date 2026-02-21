@@ -14,12 +14,16 @@ import { User, UserDocument } from './entities/user.entity';
 import { ResponseType } from 'lib/type';
 import { UpdateUserPasswordDto } from './dto/update-user.dto';
 import { ObjectId } from 'mongodb';
+import { PhoneVerification, PhoneVerificationDocument } from 'src/auth/entities/phone-verification.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+
+    @InjectModel(PhoneVerification.name)
+    private readonly phoneVerificationModel: Model<PhoneVerificationDocument>,
   ) {}
 
   private async checkEmailExists(
@@ -92,8 +96,20 @@ export class UsersService {
     updateUserDto: UpdateUserDto,
   ): Promise<UserDocument> {
     const userData = await this.findOne(user.id);
+    if (!userData) {
+      throw new NotFoundException(`User with ID ${user.id} not found`);
+    }
 
-    // if (updateUserDto.phoneNumber) send verification
+    // If phoneNumber is being updated
+    if (updateUserDto.phoneNumber && updateUserDto.phoneNumber !== userData.phoneNumber) {
+      // Reset phone verification
+      await this.userModel
+      .findByIdAndUpdate(user.id, {phone_verified_at: null}, { new: true })
+      .exec();
+
+      // Send new verification code
+      await this.sendPhoneVerification(user.id);
+    }
 
     const updateUser = await this.userModel
       .findByIdAndUpdate(user.id, updateUserDto, { new: true })
@@ -104,6 +120,92 @@ export class UsersService {
     }
 
     return updateUser;
+  }
+
+  async sendPhoneVerification(id: string): Promise<ResponseType> {
+    const user = await this.findOne(id);
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    const phoneRecord = await this.phoneVerificationModel.findOne({ phoneNumber: user.phoneNumber }).exec();
+
+    let codeRecord;
+    
+    if (user.phoneNumber) {
+      if(!user.phone_verified_at){
+        // send verification
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        if (phoneRecord) {
+          const dbNow = Date.now();
+          const cooldown = phoneRecord.updated_at.getTime() + 60 * 1000 > dbNow;
+          if (cooldown) {
+            throw new BadRequestException('Please wait before requesting another code');
+          }
+
+          codeRecord = await this.phoneVerificationModel.findOneAndUpdate(
+            { phoneNumber: user.phoneNumber },
+            { $set: { code } },
+            { new: true },
+          ).exec();
+        } else {
+          codeRecord = await this.phoneVerificationModel.create({
+            phoneNumber: user.phoneNumber,
+            code,
+          });
+        }
+      } else {
+        throw new BadRequestException('Phone number already verified'); //put null if changed
+      }
+    } else {
+      throw new BadRequestException('Phone number not found');
+    }
+
+    console.log("THE CODE IS:" + codeRecord.code);
+
+    return {
+      status: 200,
+      message: 'Verification code sent successfully',
+      origin: 'UsersService.sendPhoneVerification',
+      data: { codeRecord }, //remove!!
+    };
+  }
+  
+  async verifyPhone(phoneNumber: string, code: string, id: string): Promise<ResponseType> {
+    //check if code exist
+    const codeRecord = await this.phoneVerificationModel.findOne({ phoneNumber }).exec();
+    if (!codeRecord) throw new BadRequestException('Invalid verification code');
+
+    //custom throttle
+    const dbNow = Date.now();
+    if (codeRecord.updated_at.getTime() + 10 * 60 * 1000 < dbNow) {
+      throw new BadRequestException('Verification code expired');
+    }
+
+    //check if code is correct
+    if (codeRecord.code !== code) throw new BadRequestException('Invalid verification code');
+
+    //check if user owns phone
+    const user = await this.userModel.findOne({ _id: id, phoneNumber }).exec();
+    if (!user) throw new BadRequestException('User not found');
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      id,
+      { phone_verified_at: new Date() },
+      { new: true }
+    ).exec();
+
+    if (!updatedUser) throw new BadRequestException('User not found');
+    
+    await this.phoneVerificationModel.deleteOne({ phoneNumber }).exec();
+
+    return {
+      status: 200,
+      message: 'Phone number verified successfully',
+      origin: 'UsersService.verifyPhone',
+      data: { message: 'Phone number verified successfully' },
+    };
   }
 
   async updatePassword(id: string, data : UpdateUserPasswordDto): Promise<any> {

@@ -32,6 +32,9 @@ export class User {
 
   @Prop({ type: Date, default: null })
   email_verified_at: Date | null;
+
+  @Prop({ type: Date, default: null }) //added new for revision
+  phone_verified_at: Date | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

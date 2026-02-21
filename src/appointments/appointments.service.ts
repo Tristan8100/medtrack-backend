@@ -8,7 +8,6 @@ import { Appointment, AppointmentDocument } from './entities/appointment.entity'
 import { ObjectId } from 'mongodb';
 import { INVALID_TRANSITIONS, ResponseType } from 'lib/type';
 import { UserDocument, User } from 'src/users/entities/user.entity';
-import { In } from 'typeorm';
 
 @Injectable()
 export class AppointmentsService {
