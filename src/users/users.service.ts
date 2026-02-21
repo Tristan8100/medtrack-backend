@@ -93,9 +93,7 @@ export class UsersService {
   ): Promise<UserDocument> {
     const userData = await this.findOne(user.id);
 
-    // if (updateUserDto.password) {
-    //   updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
-    // }
+    // if (updateUserDto.phoneNumber) send verification
 
     const updateUser = await this.userModel
       .findByIdAndUpdate(user.id, updateUserDto, { new: true })
