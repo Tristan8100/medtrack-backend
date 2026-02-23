@@ -15,6 +15,7 @@ import { ResponseType } from 'lib/type';
 import { UpdateUserPasswordDto } from './dto/update-user.dto';
 import { ObjectId } from 'mongodb';
 import { PhoneVerification, PhoneVerificationDocument } from 'src/auth/entities/phone-verification.entity';
+import { TwilioService } from './phone-verification.service';
 
 @Injectable()
 export class UsersService {
@@ -24,6 +25,8 @@ export class UsersService {
 
     @InjectModel(PhoneVerification.name)
     private readonly phoneVerificationModel: Model<PhoneVerificationDocument>,
+
+    private readonly twilioService: TwilioService
   ) {}
 
   private async checkEmailExists(
@@ -108,7 +111,7 @@ export class UsersService {
       .exec();
 
       // Send new verification code
-      await this.sendPhoneVerification(user.id);
+      //await this.sendPhoneVerification(user.id);
     }
 
     const updateUser = await this.userModel
@@ -128,6 +131,8 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+
+    console.log("THE PHONE NUMBER", user.phoneNumber);
 
     const phoneRecord = await this.phoneVerificationModel.findOne({ phoneNumber: user.phoneNumber }).exec();
 
@@ -149,11 +154,26 @@ export class UsersService {
             { $set: { code } },
             { new: true },
           ).exec();
+
+          try {
+            await this.twilioService.sendSMS(user.phoneNumber, code);
+          } catch (error) {
+            console.log(error);
+            throw new BadRequestException(error);
+          }
+
         } else {
           codeRecord = await this.phoneVerificationModel.create({
             phoneNumber: user.phoneNumber,
             code,
           });
+
+          try {
+            await this.twilioService.sendSMS(user.phoneNumber, code);
+          } catch (error) {
+            console.log(error);
+            throw new BadRequestException(error);
+          }
         }
       } else {
         throw new BadRequestException('Phone number already verified'); //put null if changed
@@ -197,7 +217,7 @@ export class UsersService {
     ).exec();
 
     if (!updatedUser) throw new BadRequestException('User not found');
-    
+
     await this.phoneVerificationModel.deleteOne({ phoneNumber }).exec();
 
     return {
