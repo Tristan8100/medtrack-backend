@@ -11,6 +11,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { CustomThrottlerGuard } from 'lib/customThrottle';
+import { SystemSettingsModule } from './system-settings/system-settings.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { CustomThrottlerGuard } from 'lib/customThrottle';
     AppointmentsModule,
     MedicalRecordsModule,
     AnalyticsModule,
+    SystemSettingsModule,
   ],
   controllers: [AppController],
   providers: [

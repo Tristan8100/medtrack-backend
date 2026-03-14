@@ -8,12 +8,14 @@ import { Appointment, AppointmentDocument } from './entities/appointment.entity'
 import { ObjectId } from 'mongodb';
 import { INVALID_TRANSITIONS, ResponseType } from 'lib/type';
 import { UserDocument, User } from 'src/users/entities/user.entity';
+import { SystemSettings } from 'src/system-settings/entities/system-setting.entity';
 
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectModel(Appointment.name) private appointmentModel: Model<AppointmentDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(SystemSettings.name) private systemSettings: Model<SystemSettings>,
   ){}
 
   async create(createAppointmentDto: CreateAppointmentDto, patientId: string): Promise<ResponseType> {
@@ -26,6 +28,19 @@ export class AppointmentsService {
         if(appointmentDate < new Date()){
           console.log('Invalid date');
           throw new BadRequestException('Invalid date');
+        }
+
+        //check number of appointments on that day
+        const appointmentCount = await this.appointmentModel.countDocuments({
+          date: createAppointmentDto.date
+        })
+
+        const systemSettings = await this.systemSettings.findOne();
+        if(!systemSettings){
+          throw new BadRequestException("ADMIN hasn't set system settings");
+        }
+        if(appointmentCount >= systemSettings.reservationLimit){
+          throw new BadRequestException('Reservation limit exceeded');
         }
 
         const newAppointment = await this.appointmentModel.create({
